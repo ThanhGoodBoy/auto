@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.json",
+  "productName": "Discord Drive",
+  "version": "1.0.0",
+  "identifier": "com.discorddrive.app",
+  "build": {
+    "frontendDist": "../static"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "title": "Discord Drive",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false,
+        "url": "http://127.0.0.1:8000"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}
