@@ -1,0 +1,32 @@
+{
+  "a95f2d4e1623": {
+    "session_id": "a95f2d4e1623",
+    "filename": "Yoosee_setup1.0.0.14.exe",
+    "file_size": 142983403,
+    "total_chunks": 7,
+    "received_chunks": [],
+    "folder_id": "",
+    "message": "",
+    "status": "uploading",
+    "created_at": "2026-02-20T11:02:55.691113800+00:00",
+    "channel_id": "1474360473632903260",
+    "channel_name": "yoosee_setup10014",
+    "folder_name": null,
+    "discord_result": null
+  },
+  "472ef84a11e6": {
+    "session_id": "472ef84a11e6",
+    "filename": "Yoosee_setup1.0.0.14.exe",
+    "file_size": 142983403,
+    "total_chunks": 7,
+    "received_chunks": [],
+    "folder_id": "",
+    "message": "",
+    "status": "uploading",
+    "created_at": "2026-02-20T11:02:08.729138700+00:00",
+    "channel_id": "1474360473632903260",
+    "channel_name": "yoosee_setup10014",
+    "folder_name": null,
+    "discord_result": null
+  }
+}

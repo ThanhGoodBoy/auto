@@ -1,0 +1,100 @@
+{
+  "_comment": "Discord Drive — File cấu hình. Chỉnh sửa rồi restart server để áp dụng.",
+
+  "upload": {
+    "_comment": "Cấu hình quá trình upload file lên Discord",
+
+    "client_chunk_mb": 20,
+    "_client_chunk_mb": "Kích thước mỗi chunk client gửi lên server (MB). Tăng nếu mạng ổn định, giảm nếu hay timeout. Khuyến nghị: 2–8",
+
+    "parallel_chunks": 12,
+    "_parallel_chunks": "Số chunk gửi song song từ browser lên server cùng lúc (Promise.all batch). Tăng = nhanh hơn nhưng tốn RAM hơn. Khuyến nghị: 2–6",
+
+    "discord_safe_ratio": 0.85,
+    "_discord_safe_ratio": "Tỉ lệ % giới hạn guild dùng để ghép part trước khi gửi Discord (0.0–1.0). 0.85 = 85%. Giảm nếu vẫn bị 413.",
+
+    "zip_compress_level": 0,
+    "_zip_compress_level": "Mức nén ZIP (0=không nén/nhanh nhất, 1–9=nén dần). Dùng 0 cho video/exe/zip đã nén sẵn. Dùng 1–3 cho text/log/json. Khuyến nghị: 0",
+
+    "discord_parallel_sends": 5,
+    "_discord_parallel_sends": "Số part gửi Discord đồng thời. 1=tuần tự, 2–3=cân bằng, 4–5=nhanh nhất nhưng dễ rate limit. Khuyến nghị: 2–3",
+
+    "tg_parallel_sends": 5,
+    "_tg_parallel_sends": "Số part gửi Telegram đồng thời. Tương tự discord_parallel_sends. Khuyến nghị: 2–3",
+
+    "discord_send_retries": 3,
+    "_discord_send_retries": "Số lần thử lại khi gửi part lên Discord thất bại. Khuyến nghị: 2–5",
+
+    "discord_retry_base_delay_s": 2,
+    "_discord_retry_base_delay_s": "Thời gian chờ cơ sở cho exponential backoff khi retry gửi Discord (giây). delay = base^attempt"
+  },
+
+  "download": {
+    "_comment": "Cấu hình quá trình tải file về từ Discord",
+
+    "http_timeout_s": 600,
+    "_http_timeout_s": "Timeout tổng cho mỗi HTTP request tải part từ Discord CDN (giây). Tăng nếu hay bị timeout với file lớn.",
+
+    "retry_count": 3,
+    "_retry_count": "Số lần thử lại khi tải part từ Discord CDN thất bại. Khuyến nghị: 2–5",
+
+    "retry_base_delay_s": 2,
+    "_retry_base_delay_s": "Thời gian chờ cơ sở cho exponential backoff khi retry tải (giây). delay = base^attempt",
+
+    "part_delay_ms": 150,
+    "_part_delay_ms": "Thời gian chờ giữa các lần tải part (ms). Tránh spam Discord CDN. Khuyến nghị: 100–500",
+
+    "stream_buffer_kb": 64,
+    "_stream_buffer_kb": "Kích thước buffer khi yield data về browser (KB). 64KB là cân bằng tốt. Khuyến nghị: 32–256",
+
+    "large_file_threshold_mb": 500,
+    "_large_file_threshold_mb": "Ngưỡng kích thước file (MB) để chuyển sang chế độ stream từng part thay vì ghép toàn bộ trong RAM trước. Giảm nếu RAM yếu."
+  },
+
+  "ram": {
+    "_comment": "Giới hạn RAM dùng cho chunk_store (upload buffer). Bảo vệ server khỏi OOM khi nhiều upload đồng thời.",
+
+    "max_total_upload_mb": 2048,
+    "_max_total_upload_mb": "Tổng RAM tối đa dành cho tất cả chunk đang upload đồng thời (MB). Upload mới sẽ bị từ chối nếu vượt ngưỡng. 0 = không giới hạn. Khuyến nghị: 256–2048",
+
+    "session_ttl_minutes": 60,
+    "_session_ttl_minutes": "Thời gian tối đa một upload session được giữ trong RAM nếu không hoạt động (phút). Session hết hạn sẽ bị dọn dẹp tự động. Khuyến nghị: 30–120",
+
+    "gc_interval_minutes": 10,
+    "_gc_interval_minutes": "Tần suất chạy garbage collector dọn session hết hạn trong RAM (phút). Khuyến nghị: 5–30"
+  },
+
+  "server": {
+    "_comment": "Cấu hình FastAPI / Uvicorn",
+
+    "host": "0.0.0.0",
+    "_host": "Địa chỉ lắng nghe. 0.0.0.0 = tất cả interface. 127.0.0.1 = chỉ local.",
+
+    "port": 8000,
+    "_port": "Cổng HTTP server lắng nghe.",
+
+    "log_level": "info",
+    "_log_level": "Mức log của Uvicorn: debug | info | warning | error | critical",
+
+    "keep_alive_s": 600,
+    "_keep_alive_s": "Timeout keep-alive connection (giây). Tăng nếu upload file rất lớn bị ngắt giữa chừng.",
+
+    "max_concurrency": 5,
+    "_max_concurrency": "Số request xử lý đồng thời tối đa. Tăng nếu nhiều người dùng cùng lúc, nhưng cần đủ RAM."
+  },
+
+  "data": {
+    "_comment": "Đường dẫn file lưu trữ dữ liệu. Có thể chỉnh sang thư mục khác nếu muốn.",
+
+    "history_file": "file_history.json",
+    "folders_file": "folders.json",
+    "sessions_file": "upload_sessions.json"
+  },
+
+  "telegram": {
+    "_comment": "Cấu hình Telegram. TELEGRAM_TOKEN và TELEGRAM_CHAT_ID phải có trong bot.env thì mới active.",
+
+    "file_limit_mb": 50,
+    "_file_limit_mb": "Giới hạn file Telegram Bot API (MB). Mặc định 50MB (giới hạn chuẩn). Nếu chạy local Bot API server thì có thể tăng lên 2000MB."
+  }
+}

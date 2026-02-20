@@ -1,0 +1,86 @@
+[
+  {
+    "id": 1771585490437,
+    "filename": "jmusicbot.json",
+    "size_mb": 0.01,
+    "channel_id": "1474361147456094239",
+    "channel_name": "jmusicbot",
+    "folder_id": null,
+    "folder_name": null,
+    "status": "sent",
+    "method": "Gửi thẳng",
+    "method_key": "direct",
+    "parts": 1,
+    "parts_info": [
+      {
+        "part": 1,
+        "platform": "discord",
+        "message_id": 1474361151264522290,
+        "channel_id": "1474361147456094239",
+        "file_id": null,
+        "jump_url": "https://discord.com/channels/@me/1474361147456094239/1474361151264522290"
+      }
+    ],
+    "message_ids": [
+      1474361151264522290
+    ],
+    "jump_url": "https://discord.com/channels/@me/1474361147456094239/1474361151264522290",
+    "sent_at": "20/02/2026 18:04"
+  },
+  {
+    "id": 1771585409250,
+    "filename": "Alo, Vũ à Vũ - Alo em có phải là Vũ không - - Độ mixue meme.mp3",
+    "size_mb": 1.1,
+    "channel_id": "1474360803061792780",
+    "channel_name": "alo-v-v-alo-em-c-phi-l-v-khng-mixue-meme",
+    "folder_id": null,
+    "folder_name": null,
+    "status": "sent",
+    "method": "Gửi thẳng",
+    "method_key": "direct",
+    "parts": 1,
+    "parts_info": [
+      {
+        "part": 1,
+        "platform": "discord",
+        "message_id": 1474360810884173875,
+        "channel_id": "1474360803061792780",
+        "file_id": null,
+        "jump_url": "https://discord.com/channels/@me/1474360803061792780/1474360810884173875"
+      }
+    ],
+    "message_ids": [
+      1474360810884173875
+    ],
+    "jump_url": "https://discord.com/channels/@me/1474360803061792780/1474360810884173875",
+    "sent_at": "20/02/2026 18:03"
+  },
+  {
+    "id": 1771585396532,
+    "filename": "BrowserSelector-0.3.0.0.zip",
+    "size_mb": 0.01,
+    "channel_id": "1474360754206408744",
+    "channel_name": "browserselector-0300",
+    "folder_id": null,
+    "folder_name": null,
+    "status": "sent",
+    "method": "Gửi thẳng",
+    "method_key": "direct",
+    "parts": 1,
+    "parts_info": [
+      {
+        "part": 1,
+        "platform": "discord",
+        "message_id": 1474360757499068591,
+        "channel_id": "1474360754206408744",
+        "file_id": null,
+        "jump_url": "https://discord.com/channels/@me/1474360754206408744/1474360757499068591"
+      }
+    ],
+    "message_ids": [
+      1474360757499068591
+    ],
+    "jump_url": "https://discord.com/channels/@me/1474360754206408744/1474360757499068591",
+    "sent_at": "20/02/2026 18:03"
+  }
+]
