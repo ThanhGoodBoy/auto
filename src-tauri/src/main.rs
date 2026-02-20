@@ -1,13 +1,10 @@
 // main.rs — Discord Drive Tauri entry point.
-// Starts:
-//   1. Discord bot (serenity) — background tokio task
-//   2. Axum HTTP server on configured port
-//   3. Tauri WebView window pointing to http://127.0.0.1:{port}
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use axum::{
+    extract::DefaultBodyLimit,
     http::{header, StatusCode},
     routing::{delete, get, post},
     Router,
@@ -35,9 +32,6 @@ async fn main() {
         )
         .init();
 
-    // In dev (cargo tauri dev) the exe is in target/debug/, so use CARGO_MANIFEST_DIR
-    // (set by cargo, points to src-tauri/) then go one level up to workspace root.
-    // In release the exe sits next to static/ and bot.env.
     let base_dir = if let Ok(manifest) = std::env::var("CARGO_MANIFEST_DIR") {
         PathBuf::from(&manifest)
             .parent()
@@ -51,7 +45,6 @@ async fn main() {
     };
     info!("📂 base_dir = {}", base_dir.display());
 
-    // Load .env
     let env_path = base_dir.join("bot.env");
     if env_path.exists() {
         dotenvy::from_path(&env_path).ok();
@@ -78,6 +71,12 @@ async fn main() {
 
     let cfg = Arc::new(Config::load(&base_dir));
     cfg.print_summary();
+
+    // ── FIX: chunk upload limit = client_chunk_mb * parallel_chunks + 20% headroom ──
+    // Use 500MB hard cap; individual route overrides the global 2MB Axum default.
+    let chunk_body_limit = ((cfg.client_chunk_bytes as f64) * 1.2) as usize;
+    let chunk_body_limit = chunk_body_limit.max(50 * 1024 * 1024); // minimum 50MB
+    info!("📦 Chunk body limit: {:.0}MB", chunk_body_limit as f64 / 1024.0 / 1024.0);
 
     let thumbnail_dir = base_dir.join("thumbnails_cache");
     std::fs::create_dir_all(&thumbnail_dir).ok();
@@ -148,7 +147,11 @@ async fn main() {
         .route("/api/preview/:id",            get(api::preview_file))
         .route("/api/thumbnail/:id",          get(api::thumbnail))
         .route("/api/upload/init",            post(api::init_upload))
-        .route("/api/upload/chunk/:sid/:idx", post(api::upload_chunk))
+        // ── FIX: override Axum's 2MB default body limit for chunk uploads ──────
+        .route("/api/upload/chunk/:sid/:idx",
+            post(api::upload_chunk)
+                .layer(DefaultBodyLimit::max(chunk_body_limit)))
+        // ──────────────────────────────────────────────────────────────────────
         .route("/api/upload/session/:sid",    get(api::get_upload_session).delete(api::cancel_upload))
         .route("/api/upload/complete/:sid",   post(api::complete_upload))
         .route("/api/search",                 get(api::search_files))
