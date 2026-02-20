@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Discord Drive</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #0d0f18;
+  --bg2:      #151829;
+  --bg3:      #1c2035;
+  --card:     #1a1d30;
+  --card2:    #212540;
+  --border:   #2a2e4a;
+  --accent:   #6366f1;
+  --accent2:  #818cf8;
+  --accent3:  #4f46e5;
+  --green:    #22c55e;
+  --red:      #ef4444;
+  --yellow:   #f59e0b;
+  --cyan:     #06b6d4;
+  --text:     #e2e8f0;
+  --text2:    #94a3b8;
+  --text3:    #64748b;
+  --radius:   10px;
+  --radius2:  16px;
+  --shadow:   0 4px 24px rgba(0,0,0,0.45);
+  --shadow2:  0 2px 8px rgba(0,0,0,0.3);
+  --sidebar-w: 240px;
+  --preview-w: 360px;
+  --trans:    0.18s cubic-bezier(.4,0,.2,1);
+}
+html,body { height:100%; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); overflow:hidden; }
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text3); }
+button { font-family:inherit; cursor:pointer; border:none; outline:none; }
+input, select, textarea { font-family:inherit; outline:none; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:var(--radius); }
+a { color:var(--accent2); text-decoration:none; }
+
+/* ── Layout ───────────────────────────────────────────────────── */
+#app { display:flex; height:100vh; width:100vw; }
+
+/* ── Sidebar ──────────────────────────────────────────────────── */
+#sidebar {
+  width:var(--sidebar-w); flex-shrink:0; display:flex; flex-direction:column;
+  background:var(--bg2); border-right:1px solid var(--border); padding:20px 0; overflow-y:auto;
+  transition:width var(--trans);
+}
+.logo {
+  display:flex; align-items:center; gap:12px; padding:0 20px 24px;
+  border-bottom:1px solid var(--border);
+}
+.logo-icon {
+  width:38px; height:38px; border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  font-size:18px;
+}
+.logo-text { font-size:16px; font-weight:700; letter-spacing:-.3px; }
+.logo-sub  { font-size:11px; color:var(--text3); }
+
+.sidebar-section { padding:16px 12px 4px; }
+.sidebar-section-title { font-size:10px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text3); font-weight:600; padding:0 8px 8px; }
+
+.nav-item {
+  display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px;
+  cursor:pointer; transition:background var(--trans),color var(--trans); color:var(--text2);
+  font-size:13.5px; user-select:none; margin-bottom:2px;
+}
+.nav-item:hover { background:var(--bg3); color:var(--text); }
+.nav-item.active { background:rgba(99,102,241,.18); color:var(--accent2); font-weight:600; }
+.nav-item .icon { width:18px; text-align:center; flex-shrink:0; font-size:15px; }
+.nav-item .label { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nav-item .badge { background:var(--accent); color:#fff; font-size:10px; border-radius:99px; padding:1px 6px; }
+
+.folder-list { padding:4px 12px; }
+.folder-item {
+  display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px;
+  cursor:pointer; transition:background var(--trans); color:var(--text2); font-size:13px;
+  margin-bottom:2px; group: true;
+}
+.folder-item:hover { background:var(--bg3); color:var(--text); }
+.folder-item.active { background:rgba(99,102,241,.15); color:var(--accent2); }
+.folder-item .f-icon { font-size:14px; }
+.folder-item .f-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.folder-item .f-del { opacity:0; font-size:12px; color:var(--red); padding:2px 4px; border-radius:4px; transition:opacity .15s; }
+.folder-item:hover .f-del { opacity:1; }
+
+.sidebar-footer { margin-top:auto; padding:16px 20px 4px; border-top:1px solid var(--border); }
+.storage-bar { height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin:8px 0 4px; }
+.storage-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--cyan)); border-radius:2px; transition:width 0.5s; }
+.storage-text { font-size:11px; color:var(--text3); }
+
+/* ── Main Content ─────────────────────────────────────────────── */
+#main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+
+/* ── Topbar ───────────────────────────────────────────────────── */
+#topbar {
+  display:flex; align-items:center; gap:12px; padding:14px 24px;
+  background:var(--bg2); border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.breadcrumb { display:flex; align-items:center; gap:6px; font-size:15px; font-weight:600; flex-shrink:0; }
+.breadcrumb span { color:var(--text2); cursor:pointer; }
+.breadcrumb span:last-child { color:var(--text); cursor:default; }
+.breadcrumb-sep { color:var(--text3); font-size:12px; }
+
+#search-wrap { flex:1; max-width:420px; margin:0 auto; position:relative; }
+#search-input {
+  width:100%; padding:9px 16px 9px 40px; border-radius:99px;
+  background:var(--bg3); border-color:var(--border); font-size:13.5px; transition:border-color var(--trans);
+}
+#search-input:focus { border-color:var(--accent); }
+.search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--text3); font-size:15px; pointer-events:none; }
+#search-results {
+  position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--bg2);
+  border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); z-index:200;
+  max-height:360px; overflow-y:auto; display:none;
+}
+#search-results.visible { display:block; }
+.search-result-item { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; transition:background var(--trans); border-bottom:1px solid var(--border); }
+.search-result-item:last-child { border-bottom:none; }
+.search-result-item:hover { background:var(--bg3); }
+
+.topbar-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.btn {
+  display:inline-flex; align-items:center; gap:6px; padding:8px 16px;
+  border-radius:8px; font-size:13px; font-weight:500; transition:all var(--trans);
+}
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent3); box-shadow:0 0 20px rgba(99,102,241,.4); }
+.btn-secondary { background:var(--bg3); color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover { background:var(--card2); border-color:var(--accent); }
+.btn-ghost { background:transparent; color:var(--text2); padding:8px; border-radius:8px; }
+.btn-ghost:hover { background:var(--bg3); color:var(--text); }
+.btn-icon { width:36px; height:36px; padding:0; justify-content:center; font-size:16px; }
+
+/* ── Content Area ─────────────────────────────────────────────── */
+#content-wrap { flex:1; display:flex; overflow:hidden; }
+
+#file-area {
+  flex:1; overflow-y:auto; padding:20px 24px; min-width:0;
+  transition:padding-right var(--trans);
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────── */
+#file-toolbar {
+  display:flex; align-items:center; gap:10px; margin-bottom:18px;
+}
+.sort-select { padding:7px 12px; border-radius:8px; font-size:13px; cursor:pointer; }
+.view-btns { display:flex; background:var(--bg3); border-radius:8px; border:1px solid var(--border); overflow:hidden; }
+.view-btn { padding:7px 12px; font-size:14px; color:var(--text2); background:transparent; border:none; cursor:pointer; transition:all var(--trans); }
+.view-btn.active { background:var(--accent); color:#fff; }
+#file-count { font-size:12px; color:var(--text3); margin-left:auto; }
+
+/* ── File Grid ────────────────────────────────────────────────── */
+#file-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap:14px;
+}
+#file-grid.list-view {
+  display:flex; flex-direction:column; gap:4px;
+}
+
+.file-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius2);
+  cursor:pointer; transition:all var(--trans); position:relative; overflow:hidden; user-select:none;
+}
+.file-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(99,102,241,.2); }
+.file-card.selected { border-color:var(--accent2); background:rgba(99,102,241,.1); }
+
+/* Grid card */
+.file-card .thumb {
+  width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  background:var(--bg3); overflow:hidden; position:relative;
+}
+.file-card .thumb img { width:100%; height:100%; object-fit:cover; }
+.file-card .thumb .file-type-icon { font-size:42px; }
+.file-card .card-info { padding:10px 12px; }
+.file-card .card-name { font-size:12.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+.file-card .card-meta { font-size:11px; color:var(--text3); }
+
+/* List row */
+#file-grid.list-view .file-card {
+  display:flex; align-items:center; gap:12px; padding:10px 14px;
+  border-radius:8px; aspect-ratio:unset;
+}
+#file-grid.list-view .file-card .thumb {
+  width:40px; height:40px; flex-shrink:0; border-radius:8px; aspect-ratio:unset;
+}
+#file-grid.list-view .file-card .thumb .file-type-icon { font-size:22px; }
+#file-grid.list-view .file-card .card-info { flex:1; min-width:0; padding:0; }
+#file-grid.list-view .file-card .card-name { font-size:13.5px; margin-bottom:2px; }
+#file-grid.list-view .file-card .card-meta-row { display:flex; gap:20px; }
+#file-grid.list-view .file-card .card-size { font-size:12px; color:var(--text3); white-space:nowrap; }
+#file-grid.list-view .file-card .card-date { font-size:12px; color:var(--text3); white-space:nowrap; }
+#file-grid.list-view .file-card .card-folder { font-size:12px; color:var(--accent2); white-space:nowrap; }
+
+.file-card .card-actions {
+  position:absolute; top:6px; right:6px; display:flex; gap:4px; opacity:0;
+  transition:opacity var(--trans);
+}
+#file-grid.list-view .file-card .card-actions { position:static; margin-left:auto; opacity:1; }
+.file-card:hover .card-actions { opacity:1; }
+.card-action-btn {
+  width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center;
+  background:rgba(13,15,24,.85); color:var(--text2); font-size:13px; border:none; cursor:pointer;
+  transition:all var(--trans); backdrop-filter:blur(4px);
+}
+.card-action-btn:hover { background:var(--accent); color:#fff; }
+.card-action-btn.danger:hover { background:var(--red); color:#fff; }
+
+/* Platform badge */
+.platform-badge {
+  position:absolute; bottom:6px; left:6px; font-size:10px; padding:2px 7px;
+  border-radius:99px; font-weight:600; backdrop-filter:blur(4px);
+}
+.platform-badge.discord { background:rgba(88,101,242,.85); color:#fff; }
+.platform-badge.dual    { background:rgba(20,184,166,.85); color:#fff; }
+#file-grid.list-view .platform-badge { position:static; margin-left:8px; }
+
+/* ── Preview Panel ────────────────────────────────────────────── */
+#preview-panel {
+  width:0; flex-shrink:0; background:var(--bg2); border-left:1px solid var(--border);
+  display:flex; flex-direction:column; overflow:hidden; transition:width var(--trans);
+}
+#preview-panel.open { width:var(--preview-w); }
+
+.preview-header {
+  display:flex; align-items:center; gap:10px; padding:16px 18px;
+  border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.preview-header h3 { flex:1; font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.preview-header .close-btn { color:var(--text2); font-size:16px; cursor:pointer; padding:4px; border-radius:6px; background:transparent; border:none; }
+.preview-header .close-btn:hover { background:var(--bg3); color:var(--text); }
+
+.preview-body { flex:1; overflow:auto; display:flex; flex-direction:column; }
+
+.preview-media { flex:1; display:flex; align-items:center; justify-content:center; padding:16px; background:var(--bg); min-height:200px; }
+.preview-media img { max-width:100%; max-height:360px; border-radius:8px; object-fit:contain; }
+.preview-media video, .preview-media audio { width:100%; border-radius:8px; }
+.preview-media pre {
+  width:100%; max-height:400px; overflow:auto; background:var(--bg3);
+  border-radius:8px; padding:14px; font-size:12px; line-height:1.6;
+  font-family:'Consolas','Courier New',monospace; color:var(--text); white-space:pre-wrap; word-break:break-word;
+}
+.preview-media .preview-pdf { width:100%; height:360px; border:none; border-radius:8px; }
+.preview-media .preview-no-support {
+  text-align:center; color:var(--text3); display:flex; flex-direction:column; align-items:center; gap:12px;
+}
+.preview-media .preview-no-support .big-icon { font-size:52px; }
+
+.preview-meta { padding:16px 18px; border-top:1px solid var(--border); font-size:12.5px; }
+.meta-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); }
+.meta-row:last-child { border-bottom:none; }
+.meta-label { color:var(--text3); }
+.meta-value { color:var(--text); font-weight:500; text-align:right; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.preview-actions { display:flex; gap:8px; padding:14px 18px; flex-shrink:0; }
+.preview-actions .btn { flex:1; justify-content:center; }
+
+/* ── Upload Drop Overlay ──────────────────────────────────────── */
+#drop-overlay {
+  position:fixed; inset:0; background:rgba(13,15,24,.9); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; z-index:400; opacity:0;
+  pointer-events:none; transition:opacity var(--trans);
+}
+#drop-overlay.active { opacity:1; pointer-events:all; }
+.drop-box {
+  border:2px dashed var(--accent); border-radius:var(--radius2); padding:60px 80px;
+  text-align:center; color:var(--text2);
+}
+.drop-box .drop-icon { font-size:56px; margin-bottom:12px; }
+.drop-box h2 { font-size:22px; font-weight:700; color:var(--text); margin-bottom:8px; }
+.drop-box p { font-size:14px; color:var(--text3); }
+
+/* ── Upload Progress ──────────────────────────────────────────── */
+#upload-panel {
+  position:fixed; bottom:24px; right:24px; width:340px; z-index:300;
+  display:flex; flex-direction:column; gap:8px; pointer-events:none;
+}
+.upload-item {
+  background:var(--bg2); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; box-shadow:var(--shadow); pointer-events:all;
+  animation:slideUp .3s ease;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.upload-item-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.upload-item-name { flex:1; font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.upload-item-status { font-size:11px; color:var(--text3); }
+.upload-progress { height:4px; background:var(--bg3); border-radius:2px; overflow:hidden; }
+.upload-progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--cyan)); border-radius:2px; transition:width .3s; }
+.upload-pct { font-size:11px; color:var(--text3); margin-top:5px; text-align:right; }
+.upload-item.done .upload-progress-fill { background:var(--green); }
+.upload-item.error .upload-progress-fill { background:var(--red); }
+
+/* ── Modals ───────────────────────────────────────────────────── */
+.modal-bg {
+  position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center; z-index:500;
+  opacity:0; pointer-events:none; transition:opacity var(--trans);
+}
+.modal-bg.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius2);
+  box-shadow:var(--shadow); min-width:440px; max-width:90vw; max-height:88vh;
+  overflow:hidden; display:flex; flex-direction:column;
+  transform:scale(.96); transition:transform var(--trans);
+}
+.modal-bg.open .modal { transform:scale(1); }
+.modal-header {
+  display:flex; align-items:center; padding:18px 22px;
+  border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.modal-header h2 { flex:1; font-size:16px; font-weight:700; }
+.modal-close { color:var(--text2); font-size:18px; cursor:pointer; padding:4px 6px; border-radius:6px; background:transparent; border:none; }
+.modal-close:hover { background:var(--bg3); color:var(--text); }
+.modal-body { overflow-y:auto; padding:22px; flex:1; }
+.modal-footer { padding:16px 22px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; flex-shrink:0; }
+
+/* ── Settings Modal ───────────────────────────────────────────── */
+#settings-modal .modal { min-width:680px; }
+.settings-tabs { display:flex; gap:4px; padding:0 22px; border-bottom:1px solid var(--border); }
+.tab-btn {
+  padding:12px 16px; font-size:13px; font-weight:500; color:var(--text2);
+  background:transparent; border:none; cursor:pointer; border-bottom:2px solid transparent;
+  transition:all var(--trans); margin-bottom:-1px;
+}
+.tab-btn.active { color:var(--accent2); border-bottom-color:var(--accent2); }
+.tab-btn:hover:not(.active) { color:var(--text); }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+.settings-group { margin-bottom:24px; }
+.settings-group-title { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--text3); font-weight:600; margin-bottom:12px; }
+.settings-row { display:flex; align-items:flex-start; gap:12px; margin-bottom:14px; }
+.settings-row label { width:200px; font-size:13px; color:var(--text2); padding-top:9px; flex-shrink:0; }
+.settings-row .input-wrap { flex:1; }
+.settings-row input, .settings-row select, .settings-row textarea {
+  width:100%; padding:9px 12px; font-size:13px; border-radius:8px;
+}
+.settings-row textarea { resize:vertical; min-height:80px; line-height:1.5; }
+.settings-row .hint { font-size:11px; color:var(--text3); margin-top:4px; line-height:1.4; }
+.settings-row input:focus, .settings-row select:focus, .settings-row textarea:focus {
+  border-color:var(--accent);
+}
+.settings-divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
+.settings-restart-note {
+  background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.3);
+  border-radius:8px; padding:10px 14px; font-size:12.5px; color:var(--yellow); margin-top:8px;
+}
+
+/* ── New Folder Modal ────────────────────────────────────────── */
+#folder-modal .modal { min-width:380px; }
+#folder-name-input { width:100%; padding:11px 14px; font-size:14px; border-radius:8px; }
+
+/* ── Rename Modal ────────────────────────────────────────────── */
+#rename-modal .modal { min-width:380px; }
+#rename-input { width:100%; padding:11px 14px; font-size:14px; border-radius:8px; }
+
+/* ── Context Menu ────────────────────────────────────────────── */
+#ctx-menu {
+  position:fixed; background:var(--bg2); border:1px solid var(--border);
+  border-radius:10px; box-shadow:var(--shadow); z-index:600; min-width:180px;
+  padding:6px; opacity:0; pointer-events:none; transition:opacity .1s;
+}
+#ctx-menu.open { opacity:1; pointer-events:all; }
+.ctx-item {
+  display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:7px;
+  font-size:13px; cursor:pointer; color:var(--text2); transition:background var(--trans);
+}
+.ctx-item:hover { background:var(--bg3); color:var(--text); }
+.ctx-item.danger { color:var(--red); }
+.ctx-item.danger:hover { background:rgba(239,68,68,.12); }
+.ctx-item .ci { width:16px; text-align:center; }
+.ctx-sep { border:none; border-top:1px solid var(--border); margin:4px 0; }
+
+/* ── Toasts ───────────────────────────────────────────────────── */
+#toast-wrap { position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:700; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+.toast {
+  background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+  padding:11px 18px; font-size:13px; box-shadow:var(--shadow);
+  display:flex; align-items:center; gap:8px; animation:toastIn .25s ease; white-space:nowrap;
+}
+@keyframes toastIn { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+.toast.success { border-color:rgba(34,197,94,.4); }
+.toast.error   { border-color:rgba(239,68,68,.4); }
+.toast .ti { font-size:15px; }
+.toast.success .ti { color:var(--green); }
+.toast.error   .ti { color:var(--red); }
+.toast.info    .ti { color:var(--accent2); }
+
+/* ── Skeleton ─────────────────────────────────────────────────── */
+.skeleton { background:linear-gradient(90deg,var(--bg3) 25%,var(--card2) 50%,var(--bg3) 75%); background-size:200%; animation:skel 1.4s infinite; border-radius:6px; }
+@keyframes skel { from{background-position:200%} to{background-position:-200%} }
+
+/* ── Empty State ──────────────────────────────────────────────── */
+#empty-state { display:none; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px; color:var(--text3); text-align:center; }
+#empty-state.visible { display:flex; }
+#empty-state .es-icon { font-size:64px; margin-bottom:20px; opacity:.4; }
+#empty-state h3 { font-size:18px; font-weight:600; color:var(--text2); margin-bottom:8px; }
+#empty-state p { font-size:14px; max-width:300px; line-height:1.6; }
+
+/* ── File type colors ─────────────────────────────────────────── */
+.type-image  { color:#f472b6; }
+.type-video  { color:#a78bfa; }
+.type-audio  { color:#34d399; }
+.type-text   { color:#60a5fa; }
+.type-pdf    { color:#fb923c; }
+.type-zip    { color:#facc15; }
+.type-exe    { color:#94a3b8; }
+.type-other  { color:#64748b; }
+
+.type-image  .thumb-bg { background:rgba(244,114,182,.08); }
+.type-video  .thumb-bg { background:rgba(167,139,250,.08); }
+.type-audio  .thumb-bg { background:rgba(52,211,153,.08); }
+.type-text   .thumb-bg { background:rgba(96,165,250,.08); }
+.type-pdf    .thumb-bg { background:rgba(251,146,60,.08); }
+.type-zip    .thumb-bg { background:rgba(250,204,21,.08); }
+.type-other  .thumb-bg { background:rgba(100,116,139,.08); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- ── Sidebar ── -->
+  <nav id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">📡</div>
+      <div>
+        <div class="logo-text">Discord Drive</div>
+        <div class="logo-sub">Local Storage</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Điều hướng</div>
+      <div class="nav-item active" id="nav-all" onclick="navAll()">
+        <span class="icon">🗂️</span><span class="label">Tất cả file</span>
+      </div>
+      <div class="nav-item" id="nav-recent" onclick="navRecent()">
+        <span class="icon">🕐</span><span class="label">Gần đây</span>
+      </div>
+      <div class="nav-item" id="nav-images" onclick="navFilter('image')">
+        <span class="icon">🖼️</span><span class="label">Ảnh</span>
+      </div>
+      <div class="nav-item" id="nav-videos" onclick="navFilter('video')">
+        <span class="icon">🎬</span><span class="label">Video</span>
+      </div>
+      <div class="nav-item" id="nav-docs" onclick="navFilter('text')">
+        <span class="icon">📝</span><span class="label">Tài liệu</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title" style="display:flex;justify-content:space-between;align-items:center">
+        Thư mục
+        <button class="btn-ghost btn-icon" title="Thư mục mới" onclick="openFolderModal()" style="font-size:13px;width:24px;height:24px">＋</button>
+      </div>
+      <div class="folder-list" id="folder-list"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-weight:600">Dung lượng đã dùng</div>
+      <div class="storage-bar"><div class="storage-fill" id="storage-fill" style="width:0%"></div></div>
+      <div class="storage-text" id="storage-text">Đang tải…</div>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div id="main">
+    <!-- Topbar -->
+    <div id="topbar">
+      <div class="breadcrumb" id="breadcrumb">
+        <span onclick="navAll()">🏠 Tất cả</span>
+      </div>
+
+      <div id="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Tìm kiếm file…" autocomplete="off"
+          oninput="onSearch(this.value)" onfocus="showSearchResults()" onblur="hideSearchResultsDelay()">
+        <div id="search-results"></div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn btn-secondary" onclick="openFolderModal()">📁 Thư mục mới</button>
+        <button class="btn btn-primary" onclick="triggerUpload()">⬆️ Upload</button>
+        <button class="btn-ghost btn-icon btn" title="Cài đặt" onclick="openSettings()">⚙️</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div id="content-wrap">
+      <div id="file-area" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <!-- Toolbar -->
+        <div id="file-toolbar">
+          <select class="sort-select" onchange="onSortChange(this.value)">
+            <option value="date-desc">📅 Mới nhất</option>
+            <option value="date-asc">📅 Cũ nhất</option>
+            <option value="name-asc">🔤 Tên A-Z</option>
+            <option value="name-desc">🔤 Tên Z-A</option>
+            <option value="size-desc">📦 Lớn nhất</option>
+            <option value="size-asc">📦 Nhỏ nhất</option>
+          </select>
+          <div class="view-btns">
+            <button class="view-btn active" id="grid-btn" onclick="setView('grid')" title="Dạng lưới">⊞</button>
+            <button class="view-btn" id="list-btn" onclick="setView('list')" title="Dạng danh sách">☰</button>
+          </div>
+          <span class="btn-ghost btn" id="upload-here-btn" onclick="triggerUpload()" title="Upload vào đây" style="font-size:13px;padding:7px 12px;">⬆️ Thả file vào đây</span>
+          <span id="file-count"></span>
+        </div>
+
+        <div id="empty-state">
+          <div class="es-icon">☁️</div>
+          <h3>Chưa có file nào</h3>
+          <p>Kéo thả file vào đây hoặc nhấn Upload để bắt đầu lưu trữ qua Discord.</p>
+        </div>
+
+        <div id="file-grid"></div>
+      </div>
+
+      <!-- Preview Panel -->
+      <div id="preview-panel">
+        <div class="preview-header">
+          <h3 id="preview-title">Xem trước</h3>
+          <button class="close-btn" onclick="closePreview()">✕</button>
+        </div>
+        <div class="preview-body">
+          <div class="preview-media" id="preview-media"></div>
+          <div class="preview-meta" id="preview-meta"></div>
+        </div>
+        <div class="preview-actions">
+          <button class="btn btn-primary" id="preview-download-btn" onclick="downloadCurrent()">⬇️ Tải về</button>
+          <button class="btn btn-secondary" id="preview-open-btn" onclick="openInBrowser()">🔗 Mở</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drop Overlay -->
+<div id="drop-overlay">
+  <div class="drop-box">
+    <div class="drop-icon">☁️</div>
+    <h2>Thả file để upload</h2>
+    <p>Hỗ trợ mọi định dạng — ảnh, video, tài liệu, v.v.</p>
+  </div>
+</div>
+
+<!-- Upload Progress Panel -->
+<div id="upload-panel"></div>
+
+<!-- Toast container -->
+<div id="toast-wrap"></div>
+
+<!-- Context Menu -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="ctxPreview()"><span class="ci">👁️</span> Xem trước</div>
+  <div class="ctx-item" onclick="ctxDownload()"><span class="ci">⬇️</span> Tải về</div>
+  <div class="ctx-item" onclick="ctxRename()"><span class="ci">✏️</span> Đổi tên</div>
+  <div class="ctx-item" onclick="ctxMove()"><span class="ci">📁</span> Di chuyển</div>
+  <hr class="ctx-sep">
+  <div class="ctx-item danger" onclick="ctxDelete()"><span class="ci">🗑️</span> Xóa</div>
+</div>
+
+<!-- New Folder Modal -->
+<div class="modal-bg" id="folder-modal">
+  <div class="modal" style="min-width:380px">
+    <div class="modal-header">
+      <h2>📁 Tạo thư mục mới</h2>
+      <button class="modal-close" onclick="closeFolderModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" id="folder-name-input" placeholder="Tên thư mục…" style="width:100%;padding:11px 14px;font-size:14px;border-radius:8px;"
+        onkeydown="if(event.key==='Enter')createFolder()">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeFolderModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="createFolder()">Tạo thư mục</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="modal-bg" id="rename-modal">
+  <div class="modal" style="min-width:380px">
+    <div class="modal-header">
+      <h2>✏️ Đổi tên file</h2>
+      <button class="modal-close" onclick="closeRenameModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" id="rename-input" placeholder="Tên mới…" style="width:100%;padding:11px 14px;font-size:14px;border-radius:8px;"
+        onkeydown="if(event.key==='Enter')doRename()">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeRenameModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="doRename()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move Modal -->
+<div class="modal-bg" id="move-modal">
+  <div class="modal" style="min-width:380px">
+    <div class="modal-header">
+      <h2>📁 Di chuyển file</h2>
+      <button class="modal-close" onclick="closeMoveModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Chọn thư mục đích:</p>
+      <div id="move-folder-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-bg" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal" style="min-width:700px;max-height:88vh">
+    <div class="modal-header">
+      <h2>⚙️ Cài đặt</h2>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-env')">🔑 Bot & Tokens</button>
+      <button class="tab-btn" onclick="switchTab('tab-upload')">⬆️ Upload</button>
+      <button class="tab-btn" onclick="switchTab('tab-download')">⬇️ Download</button>
+      <button class="tab-btn" onclick="switchTab('tab-server')">🖥️ Server</button>
+      <button class="tab-btn" onclick="switchTab('tab-advanced')">🔧 Nâng cao</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="settings-content" style="padding:24px"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="settings-restart-note" id="settings-restart-note" style="display:none;flex:1">
+        ⚠️ Một số thay đổi cần restart app để có hiệu lực.
+      </div>
+      <button class="btn btn-secondary" onclick="closeSettings()">Hủy</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Lưu cài đặt</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="file-input" multiple style="display:none" onchange="onFilesSelected(this.files)">
+
+<script>
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let state = {
+  files:         [],
+  folders:       [],
+  currentFolder: null,   // null = root
+  selectedFile:  null,
+  previewFile:   null,
+  viewMode:      'grid',
+  sortKey:       'date-desc',
+  filterType:    null,   // null | 'image'|'video'|'text'|'audio'
+  filterRecent:  false,
+  ctxTarget:     null,
+  renameTarget:  null,
+  moveTarget:    null,
+  settings:      null,
+  activeTab:     'tab-env',
+};
+
+const CHUNK_SIZE = 20 * 1024 * 1024;  // will be overridden from /api/upload/init
+const IMAGE_EXTS  = new Set(['jpg','jpeg','png','gif','webp','bmp','svg','ico','tiff']);
+const VIDEO_EXTS  = new Set(['mp4','webm','mkv','avi','mov','wmv','flv','m4v']);
+const AUDIO_EXTS  = new Set(['mp3','wav','ogg','flac','aac','m4a','wma']);
+const TEXT_EXTS   = new Set(['txt','md','json','xml','yaml','yml','csv','log','ini','cfg','toml','env',
+  'html','htm','css','js','ts','py','java','c','cpp','h','cs','go','rs','php','rb','sh','bat','ps1']);
+const PDF_EXTS    = new Set(['pdf']);
+
+function getExt(name) { return name.split('.').pop().toLowerCase(); }
+function getCat(name) {
+  const e = getExt(name);
+  if (IMAGE_EXTS.has(e)) return 'image';
+  if (VIDEO_EXTS.has(e)) return 'video';
+  if (AUDIO_EXTS.has(e)) return 'audio';
+  if (TEXT_EXTS.has(e))  return 'text';
+  if (PDF_EXTS.has(e))   return 'pdf';
+  if (['zip','rar','7z','tar','gz'].includes(e)) return 'zip';
+  if (['exe','msi','dmg','deb','apk'].includes(e)) return 'exe';
+  return 'other';
+}
+const CAT_ICONS = {
+  image:'🖼️', video:'🎬', audio:'🎵', text:'📄', pdf:'📕',
+  zip:'🗜️', exe:'⚙️', other:'📦',
+};
+
+function fmtSize(mb) {
+  if (!mb) return '—';
+  if (mb < 1) return (mb * 1024).toFixed(0) + ' KB';
+  if (mb < 1024) return mb.toFixed(1) + ' MB';
+  return (mb / 1024).toFixed(2) + ' GB';
+}
+
+// ════════════════════════════════════════════════════════
+// API
+// ════════════════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = { method, headers: {} };
+  if (body && typeof body === 'object' && !(body instanceof FormData)) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  } else if (body) {
+    opts.body = body;
+  }
+  const r = await fetch(path, opts);
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    throw new Error(t || r.statusText);
+  }
+  return r.json();
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+async function init() {
+  await Promise.all([loadFolders(), loadFiles(), loadStats()]);
+}
+
+async function loadFolders() {
+  try {
+    const d = await api('GET', '/api/folders');
+    state.folders = d.folders || [];
+    renderFolders();
+    renderMoveFolderList();
+  } catch(e) { toast('Lỗi tải thư mục', 'error'); }
+}
+
+async function loadFiles() {
+  try {
+    let url = '/api/files';
+    const params = [];
+    if (state.currentFolder) params.push('folder_id=' + state.currentFolder.id);
+    if (params.length) url += '?' + params.join('&');
+    const d = await api('GET', url);
+    state.files = d.files || [];
+    renderFiles();
+  } catch(e) { toast('Lỗi tải file', 'error'); }
+}
+
+async function loadStats() {
+  try {
+    const s = await api('GET', '/api/stats');
+    const tb = Math.max(s.total_mb / 1024, 0);  // rough "TB equivalent"
+    const pct = Math.min((s.total_mb / (1024 * 8)) * 100, 100); // show against 8GB ref
+    document.getElementById('storage-fill').style.width = pct + '%';
+    document.getElementById('storage-text').textContent =
+      `${fmtSize(s.total_mb)} · ${s.total_files} files · ${s.total_folders} folders`;
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════
+function navAll() {
+  state.currentFolder = null;
+  state.filterType    = null;
+  state.filterRecent  = false;
+  setNavActive('nav-all');
+  updateBreadcrumb();
+  loadFiles();
+}
+function navRecent() {
+  state.currentFolder = null;
+  state.filterType    = null;
+  state.filterRecent  = true;
+  setNavActive('nav-recent');
+  updateBreadcrumb('🕐 Gần đây');
+  loadFiles();
+}
+function navFilter(type) {
+  state.currentFolder = null;
+  state.filterType    = type;
+  state.filterRecent  = false;
+  const labels = {image:'🖼️ Ảnh',video:'🎬 Video',text:'📝 Tài liệu'};
+  const ids = {image:'nav-images',video:'nav-videos',text:'nav-docs'};
+  setNavActive(ids[type]);
+  updateBreadcrumb(labels[type]);
+  // Load all files then filter
+  api('GET','/api/files').then(d => {
+    state.files = (d.files||[]).filter(f => getCat(f.filename) === type);
+    renderFiles();
+  });
+}
+function openFolder(folder) {
+  state.currentFolder = folder;
+  state.filterType    = null;
+  state.filterRecent  = false;
+  setNavActive(null);
+  document.querySelectorAll('.folder-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id == folder.id);
+  });
+  updateBreadcrumb(folder.name);
+  loadFiles();
+}
+function setNavActive(id) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if (id) document.getElementById(id)?.classList.add('active');
+  document.querySelectorAll('.folder-item').forEach(el => el.classList.remove('active'));
+}
+function updateBreadcrumb(label) {
+  const bc = document.getElementById('breadcrumb');
+  if (!label) {
+    bc.innerHTML = `<span onclick="navAll()">🏠 Tất cả</span>`;
+  } else {
+    bc.innerHTML = `<span onclick="navAll()">🏠 Tất cả</span><span class="breadcrumb-sep">›</span><span>${label}</span>`;
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER FOLDERS
+// ════════════════════════════════════════════════════════
+function renderFolders() {
+  const el = document.getElementById('folder-list');
+  if (!state.folders.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 10px">Chưa có thư mục</div>'; return; }
+  el.innerHTML = state.folders.map(f => `
+    <div class="folder-item" data-id="${f.id}" onclick="openFolder(${JSON.stringify(f).replace(/"/g,'&quot;')})">
+      <span class="f-icon">📁</span>
+      <span class="f-name">${esc(f.name)}</span>
+      <button class="f-del" onclick="event.stopPropagation();deleteFolder(${f.id})" title="Xóa">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderMoveFolderList() {
+  const el = document.getElementById('move-folder-list');
+  if (!el) return;
+  const folders = [{id: '', name: '🏠 Root (không có thư mục)', root: true}, ...state.folders];
+  el.innerHTML = folders.map(f => `
+    <div class="folder-item" style="margin-bottom:6px" onclick="doMove('${f.id}')">
+      <span class="f-icon">${f.root ? '🏠' : '📁'}</span>
+      <span class="f-name">${esc(f.name)}</span>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER FILES
+// ════════════════════════════════════════════════════════
+function getFilteredSorted() {
+  let files = [...state.files];
+  if (state.filterRecent) files = files.slice(0, 30);
+  if (state.filterType) files = files.filter(f => getCat(f.filename) === state.filterType);
+  // Sort
+  const [key, dir] = state.sortKey.split('-');
+  files.sort((a, b) => {
+    let va, vb;
+    if (key === 'date') { va = a.sent_at || ''; vb = b.sent_at || ''; }
+    else if (key === 'name') { va = a.filename.toLowerCase(); vb = b.filename.toLowerCase(); }
+    else if (key === 'size') { va = a.size_mb || 0; vb = b.size_mb || 0; }
+    if (dir === 'asc') return va < vb ? -1 : va > vb ? 1 : 0;
+    return va > vb ? -1 : va < vb ? 1 : 0;
+  });
+  return files;
+}
+
+function renderFiles() {
+  const files = getFilteredSorted();
+  const grid  = document.getElementById('file-grid');
+  const empty = document.getElementById('empty-state');
+
+  document.getElementById('file-count').textContent = files.length ? `${files.length} file` : '';
+
+  if (!files.length) {
+    grid.innerHTML  = '';
+    empty.classList.add('visible');
+    return;
+  }
+  empty.classList.remove('visible');
+  grid.innerHTML = files.map(f => buildCard(f)).join('');
+  // lazy load thumbnails
+  if (state.viewMode === 'grid') {
+    files.forEach(f => { if (getCat(f.filename) === 'image') loadThumb(f.id); });
+  }
+}
+
+function buildCard(f) {
+  const cat   = getCat(f.filename);
+  const icon  = CAT_ICONS[cat] || '📦';
+  const isList = state.viewMode === 'list';
+  const method = f.method_key || '';
+  const badge  = method === 'dual' ?
+    `<span class="platform-badge dual">Discord+TG</span>` :
+    `<span class="platform-badge discord">Discord</span>`;
+
+  const thumbHtml = `
+    <div class="thumb ${isList?'':'type-'+cat} thumb-bg">
+      ${cat === 'image'
+        ? `<img id="thumb-${f.id}" src="" alt="" style="display:none" loading="lazy">`
+        : ''}
+      <span class="file-type-icon type-${cat}" id="icon-${f.id}">${icon}</span>
+      ${!isList ? badge : ''}
+    </div>`;
+
+  if (isList) {
+    return `
+    <div class="file-card" data-id="${f.id}"
+      onclick="selectFile(${f.id})"
+      ondblclick="openPreview(${f.id})"
+      oncontextmenu="showCtxMenu(event,${f.id})">
+      ${thumbHtml}
+      <div class="card-info">
+        <div class="card-name">${esc(f.filename)}</div>
+        <div class="card-meta-row">
+          <span class="card-size">${fmtSize(f.size_mb)}</span>
+          <span class="card-date">${f.sent_at||''}</span>
+          ${f.folder_name ? `<span class="card-folder">📁 ${esc(f.folder_name)}</span>` : ''}
+          ${method==='dual'?'<span class="platform-badge dual" style="position:static">Discord+TG</span>':''}
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="card-action-btn" title="Xem trước" onclick="event.stopPropagation();openPreview(${f.id})">👁️</button>
+        <button class="card-action-btn" title="Tải về" onclick="event.stopPropagation();downloadFile(${f.id})">⬇️</button>
+        <button class="card-action-btn danger" title="Xóa" onclick="event.stopPropagation();deleteFile(${f.id})">🗑️</button>
+      </div>
+    </div>`;
+  }
+
+  return `
+    <div class="file-card type-${cat}" data-id="${f.id}"
+      onclick="selectFile(${f.id})"
+      ondblclick="openPreview(${f.id})"
+      oncontextmenu="showCtxMenu(event,${f.id})">
+      ${thumbHtml}
+      <div class="card-info">
+        <div class="card-name" title="${esc(f.filename)}">${esc(f.filename)}</div>
+        <div class="card-meta">${fmtSize(f.size_mb)} · ${f.sent_at||''}</div>
+      </div>
+      <div class="card-actions">
+        <button class="card-action-btn" title="Xem trước" onclick="event.stopPropagation();openPreview(${f.id})">👁️</button>
+        <button class="card-action-btn" title="Tải về" onclick="event.stopPropagation();downloadFile(${f.id})">⬇️</button>
+        <button class="card-action-btn danger" title="Xóa" onclick="event.stopPropagation();deleteFile(${f.id})">🗑️</button>
+      </div>
+    </div>`;
+}
+
+function loadThumb(fileId) {
+  const img  = document.getElementById('thumb-' + fileId);
+  const icon = document.getElementById('icon-' + fileId);
+  if (!img) return;
+  img.onload = () => { img.style.display = 'block'; if(icon) icon.style.display = 'none'; };
+  img.onerror = () => {};
+  img.src = `/api/thumbnail/${fileId}`;
+}
+
+// ════════════════════════════════════════════════════════
+// SELECT & PREVIEW
+// ════════════════════════════════════════════════════════
+function selectFile(id) {
+  state.selectedFile = id;
+  document.querySelectorAll('.file-card').forEach(el => {
+    el.classList.toggle('selected', Number(el.dataset.id) === id);
+  });
+}
+
+function openPreview(id) {
+  const f = state.files.find(x => x.id === id);
+  if (!f) return;
+  state.previewFile = f;
+  selectFile(id);
+  renderPreview(f);
+  document.getElementById('preview-panel').classList.add('open');
+}
+
+function closePreview() {
+  document.getElementById('preview-panel').classList.remove('open');
+  state.previewFile = null;
+}
+
+function renderPreview(f) {
+  document.getElementById('preview-title').textContent = f.filename;
+  const cat    = getCat(f.filename);
+  const media  = document.getElementById('preview-media');
+  const metaEl = document.getElementById('preview-meta');
+  const url    = `/api/preview/${f.id}`;
+
+  if (cat === 'image') {
+    media.innerHTML = `<img src="${url}" alt="${esc(f.filename)}" style="max-width:100%;max-height:380px;border-radius:8px;object-fit:contain">`;
+  } else if (cat === 'video') {
+    media.innerHTML = `<video controls style="width:100%;border-radius:8px;max-height:300px" src="${url}"></video>`;
+  } else if (cat === 'audio') {
+    media.innerHTML = `<div style="width:100%;padding:20px 0"><audio controls style="width:100%" src="${url}"></audio></div>`;
+  } else if (cat === 'pdf') {
+    media.innerHTML = `<iframe class="preview-pdf" src="${url}" title="${esc(f.filename)}"></iframe>`;
+  } else if (cat === 'text') {
+    media.innerHTML = `<div style="width:100%;text-align:center;color:var(--text3);padding:20px"><span style="font-size:32px">⏳</span><br><small>Đang tải nội dung…</small></div>`;
+    fetch(url).then(r => r.text()).then(txt => {
+      media.innerHTML = `<pre>${esc(txt.slice(0, 50000))}</pre>`;
+    }).catch(() => {
+      media.innerHTML = `<div class="preview-no-support"><div class="big-icon">📄</div><p>Không thể hiển thị nội dung file</p></div>`;
+    });
+  } else {
+    media.innerHTML = `<div class="preview-no-support">
+      <div class="big-icon">${CAT_ICONS[cat]||'📦'}</div>
+      <p style="color:var(--text2)">${esc(f.filename)}</p>
+      <p>Không hỗ trợ xem trước loại file này.<br>Tải về để mở.</p>
+    </div>`;
+  }
+
+  metaEl.innerHTML = `
+    <div class="meta-row"><span class="meta-label">📛 Tên file</span><span class="meta-value" title="${esc(f.filename)}">${esc(f.filename)}</span></div>
+    <div class="meta-row"><span class="meta-label">📦 Kích thước</span><span class="meta-value">${fmtSize(f.size_mb)}</span></div>
+    <div class="meta-row"><span class="meta-label">📅 Ngày tải</span><span class="meta-value">${f.sent_at||'—'}</span></div>
+    <div class="meta-row"><span class="meta-label">📂 Thư mục</span><span class="meta-value">${f.folder_name ? esc(f.folder_name) : 'Root'}</span></div>
+    <div class="meta-row"><span class="meta-label">🔢 Parts</span><span class="meta-value">${f.parts||1}</span></div>
+    <div class="meta-row"><span class="meta-label">🔗 Phương thức</span><span class="meta-value">${f.method||'—'}</span></div>
+  `;
+}
+
+function downloadCurrent() { if (state.previewFile) downloadFile(state.previewFile.id); }
+function openInBrowser()   { if (state.previewFile) window.open(`/api/preview/${state.previewFile.id}`, '_blank'); }
+
+// ════════════════════════════════════════════════════════
+// UPLOAD
+// ════════════════════════════════════════════════════════
+function triggerUpload() { document.getElementById('file-input').click(); }
+function onFilesSelected(files) { [...files].forEach(uploadFile); document.getElementById('file-input').value = ''; }
+
+function onDragOver(e) { e.preventDefault(); document.getElementById('drop-overlay').classList.add('active'); }
+function onDragLeave(e) { if (!e.relatedTarget) document.getElementById('drop-overlay').classList.remove('active'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-overlay').classList.remove('active');
+  const files = e.dataTransfer?.files;
+  if (files?.length) [...files].forEach(uploadFile);
+}
+
+async function uploadFile(file) {
+  const id      = Date.now() + '-' + Math.random().toString(36).slice(2);
+  const panel   = document.getElementById('upload-panel');
+  const item    = document.createElement('div');
+  item.className = 'upload-item';
+  item.id = 'up-' + id;
+  item.innerHTML = `
+    <div class="upload-item-header">
+      <span style="font-size:16px">${CAT_ICONS[getCat(file.name)]||'📦'}</span>
+      <span class="upload-item-name">${esc(file.name)}</span>
+      <span class="upload-item-status" id="us-${id}">Chuẩn bị…</span>
+    </div>
+    <div class="upload-progress"><div class="upload-progress-fill" id="up-fill-${id}" style="width:0%"></div></div>
+    <div class="upload-pct" id="up-pct-${id}">0%</div>`;
+  panel.appendChild(item);
+
+  function setStatus(t) { document.getElementById('us-'+id).textContent = t; }
+  function setProgress(p) {
+    document.getElementById('up-fill-'+id).style.width = p+'%';
+    document.getElementById('up-pct-'+id).textContent = Math.round(p)+'%';
+  }
+
+  try {
+    setStatus('Khởi tạo…');
+    const initData = await api('POST', '/api/upload/init', {
+      filename:     file.name,
+      file_size:    file.size,
+      total_chunks: Math.ceil(file.size / CHUNK_SIZE),
+      folder_id:    state.currentFolder ? String(state.currentFolder.id) : '',
+      message:      '',
+    });
+    const sessionId   = initData.session_id;
+    const chunkSize   = initData.chunk_size || CHUNK_SIZE;
+    const totalChunks = Math.ceil(file.size / chunkSize);
+    const received    = new Set(initData.received_chunks || []);
+
+    setStatus('Đang upload…');
+    const PARALLEL = 4;
+    let chunkIdx = 0;
+
+    async function uploadChunk(idx) {
+      if (received.has(idx)) return;
+      const start  = idx * chunkSize;
+      const end    = Math.min(start + chunkSize, file.size);
+      const blob   = file.slice(start, end);
+      const body   = await blob.arrayBuffer();
+      await fetch(`/api/upload/chunk/${sessionId}/${idx}`, { method:'POST', body });
+      received.add(idx);
+      setProgress((received.size / totalChunks) * 90);
+    }
+
+    // Upload chunks in parallel batches
+    while (chunkIdx < totalChunks) {
+      const batch = [];
+      for (let i = 0; i < PARALLEL && chunkIdx < totalChunks; i++, chunkIdx++) {
+        batch.push(uploadChunk(chunkIdx));
+      }
+      await Promise.all(batch);
+    }
+
+    setStatus('Đang gửi Discord…');
+    setProgress(95);
+    const result = await api('POST', `/api/upload/complete/${sessionId}`);
+    setProgress(100);
+    setStatus('Hoàn tất ✅');
+    item.classList.add('done');
+    toast(`✅ ${file.name} đã upload thành công`, 'success');
+    setTimeout(() => item.remove(), 4000);
+    await loadFiles();
+    await loadStats();
+  } catch(e) {
+    setStatus('Lỗi ❌');
+    item.classList.add('error');
+    toast(`Lỗi upload: ${e.message}`, 'error');
+    setTimeout(() => item.remove(), 6000);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// FILE ACTIONS
+// ════════════════════════════════════════════════════════
+async function deleteFile(id) {
+  const f = state.files.find(x => x.id === id);
+  if (!f) return;
+  if (!confirm(`Xóa file "${f.filename}"?\nFile sẽ bị xóa khỏi danh sách (channel Discord vẫn giữ nguyên).`)) return;
+  try {
+    await api('DELETE', `/api/files/${id}`);
+    toast('🗑️ Đã xóa file', 'info');
+    if (state.previewFile?.id === id) closePreview();
+    await loadFiles();
+    await loadStats();
+  } catch(e) { toast('Lỗi xóa file: '+e.message, 'error'); }
+}
+
+function downloadFile(id) {
+  const f = state.files.find(x => x.id === id);
+  if (!f) return;
+  toast(`⬇️ Đang tải "${f.filename}"…`, 'info');
+  const a = document.createElement('a');
+  a.href = `/api/merge/${id}`;
+  a.download = f.filename;
+  a.click();
+}
+
+async function deleteFolder(id) {
+  const f = state.folders.find(x => x.id === id);
+  if (!confirm(`Xóa thư mục "${f?.name}"?`)) return;
+  try {
+    await api('DELETE', `/api/folders/${id}`);
+    toast('🗑️ Đã xóa thư mục', 'info');
+    if (state.currentFolder?.id === id) navAll();
+    await loadFolders();
+  } catch(e) { toast('Lỗi: '+e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════════════
+// CONTEXT MENU
+// ════════════════════════════════════════════════════════
+function showCtxMenu(e, id) {
+  e.preventDefault();
+  state.ctxTarget = id;
+  const m = document.getElementById('ctx-menu');
+  m.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
+  m.style.top  = Math.min(e.clientY, window.innerHeight - 200) + 'px';
+  m.classList.add('open');
+  selectFile(id);
+}
+function hideCtxMenu() { document.getElementById('ctx-menu').classList.remove('open'); }
+document.addEventListener('click', hideCtxMenu);
+document.addEventListener('keydown', e => { if(e.key==='Escape'){hideCtxMenu();closePreview();} });
+
+function ctxPreview()  { hideCtxMenu(); if(state.ctxTarget) openPreview(state.ctxTarget); }
+function ctxDownload() { hideCtxMenu(); if(state.ctxTarget) downloadFile(state.ctxTarget); }
+function ctxRename()   { hideCtxMenu(); if(state.ctxTarget) openRenameModal(state.ctxTarget); }
+function ctxMove()     { hideCtxMenu(); if(state.ctxTarget) openMoveModal(state.ctxTarget); }
+function ctxDelete()   { hideCtxMenu(); if(state.ctxTarget) deleteFile(state.ctxTarget); }
+
+// ════════════════════════════════════════════════════════
+// RENAME
+// ════════════════════════════════════════════════════════
+function openRenameModal(id) {
+  state.renameTarget = id;
+  const f = state.files.find(x => x.id === id);
+  document.getElementById('rename-input').value = f?.filename || '';
+  document.getElementById('rename-modal').classList.add('open');
+  setTimeout(() => { const el = document.getElementById('rename-input'); el.focus(); el.select(); }, 50);
+}
+function closeRenameModal() { document.getElementById('rename-modal').classList.remove('open'); }
+async function doRename() {
+  const newName = document.getElementById('rename-input').value.trim();
+  if (!newName) return;
+  try {
+    await api('PATCH', `/api/files/${state.renameTarget}`, { filename: newName });
+    closeRenameModal();
+    toast('✅ Đã đổi tên', 'success');
+    await loadFiles();
+  } catch(e) { toast('Lỗi: '+e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════════════
+// MOVE
+// ════════════════════════════════════════════════════════
+function openMoveModal(id) {
+  state.moveTarget = id;
+  renderMoveFolderList();
+  document.getElementById('move-modal').classList.add('open');
+}
+function closeMoveModal() { document.getElementById('move-modal').classList.remove('open'); }
+async function doMove(folderId) {
+  try {
+    await api('POST', `/api/files/${state.moveTarget}/move`, { folder_id: folderId || null });
+    closeMoveModal();
+    toast('✅ Đã di chuyển', 'success');
+    await loadFiles();
+  } catch(e) { toast('Lỗi: '+e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════════════
+// NEW FOLDER
+// ════════════════════════════════════════════════════════
+function openFolderModal() {
+  document.getElementById('folder-name-input').value = '';
+  document.getElementById('folder-modal').classList.add('open');
+  setTimeout(() => document.getElementById('folder-name-input').focus(), 50);
+}
+function closeFolderModal() { document.getElementById('folder-modal').classList.remove('open'); }
+async function createFolder() {
+  const name = document.getElementById('folder-name-input').value.trim();
+  if (!name) return;
+  try {
+    await api('POST', '/api/folders', { name });
+    closeFolderModal();
+    toast('📁 Tạo thư mục thành công', 'success');
+    await loadFolders();
+  } catch(e) { toast('Lỗi: '+e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════════════════
+let searchTimer;
+function onSearch(q) {
+  clearTimeout(searchTimer);
+  if (!q.trim()) { hideSearchResults(); return; }
+  searchTimer = setTimeout(async () => {
+    try {
+      const d = await api('GET', `/api/search?q=${encodeURIComponent(q)}`);
+      renderSearchResults(d.files || []);
+    } catch(e){}
+  }, 300);
+}
+function renderSearchResults(files) {
+  const el = document.getElementById('search-results');
+  if (!files.length) { el.innerHTML = '<div style="padding:14px 16px;color:var(--text3);font-size:13px">Không tìm thấy kết quả</div>'; el.classList.add('visible'); return; }
+  el.innerHTML = files.slice(0,10).map(f => `
+    <div class="search-result-item" onclick="openPreviewFromSearch(${f.id})">
+      <span style="font-size:18px">${CAT_ICONS[getCat(f.filename)]||'📦'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.filename)}</div>
+        <div style="font-size:11px;color:var(--text3)">${fmtSize(f.size_mb)} · ${f.folder_name||'Root'}</div>
+      </div>
+    </div>
+  `).join('');
+  el.classList.add('visible');
+}
+function showSearchResults() { if (document.getElementById('search-input').value.trim()) document.getElementById('search-results').classList.add('visible'); }
+function hideSearchResults() { document.getElementById('search-results').classList.remove('visible'); }
+function hideSearchResultsDelay() { setTimeout(hideSearchResults, 200); }
+async function openPreviewFromSearch(id) {
+  hideSearchResults();
+  document.getElementById('search-input').value = '';
+  // Load all files to find it
+  try {
+    const d = await api('GET', '/api/files');
+    state.files = d.files || [];
+    const f = state.files.find(x => x.id === id);
+    if (f) openPreview(id);
+  } catch(e){}
+}
+
+// ════════════════════════════════════════════════════════
+// SORT & VIEW
+// ════════════════════════════════════════════════════════
+function onSortChange(v) { state.sortKey = v; renderFiles(); }
+function setView(v) {
+  state.viewMode = v;
+  document.getElementById('file-grid').className = v === 'list' ? 'list-view' : '';
+  document.getElementById('grid-btn').classList.toggle('active', v==='grid');
+  document.getElementById('list-btn').classList.toggle('active', v==='list');
+  renderFiles();
+}
+
+// ════════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════════
+const SETTINGS_TABS = {
+  'tab-env': buildEnvTab,
+  'tab-upload': buildUploadTab,
+  'tab-download': buildDownloadTab,
+  'tab-server': buildServerTab,
+  'tab-advanced': buildAdvancedTab,
+};
+
+async function openSettings() {
+  try {
+    state.settings = await api('GET', '/api/settings');
+    switchTab('tab-env');
+    document.getElementById('settings-modal').classList.add('open');
+  } catch(e) { toast('Lỗi tải cài đặt: '+e.message, 'error'); }
+}
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+
+function switchTab(tabId) {
+  state.activeTab = tabId;
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    const id = Object.keys(SETTINGS_TABS)[i];
+    btn.classList.toggle('active', id === tabId);
+  });
+  const content = document.getElementById('settings-content');
+  content.innerHTML = (SETTINGS_TABS[tabId] || (() => ''))(state.settings);
+}
+
+function buildEnvTab(s) {
+  const env = s?.env || {};
+  return `
+    <div class="settings-group">
+      <div class="settings-group-title">🔑 Discord Bot</div>
+      <div class="settings-row">
+        <label>Bot Token</label>
+        <div class="input-wrap">
+          <input type="password" id="s-DISCORD_TOKEN" value="${esc(env.DISCORD_TOKEN||'')}" placeholder="Bot token từ Discord Developer Portal">
+          <div class="hint">Lấy từ Discord Developer Portal → Applications → Bot → Token</div>
+        </div>
+      </div>
+      <div class="settings-row">
+        <label>Guild (Server) ID</label>
+        <div class="input-wrap">
+          <input type="text" id="s-DISCORD_GUILD_ID" value="${esc(env.DISCORD_GUILD_ID||'')}" placeholder="ID server Discord">
+          <div class="hint">Bật Developer Mode → chuột phải server → Copy Server ID</div>
+        </div>
+      </div>
+    </div>
+    <hr class="settings-divider">
+    <div class="settings-group">
+      <div class="settings-group-title">✈️ Telegram (tùy chọn — dual upload)</div>
+      <div class="settings-row">
+        <label>Telegram Bot Token</label>
+        <div class="input-wrap">
+          <input type="password" id="s-TELEGRAM_TOKEN" value="${esc(env.TELEGRAM_TOKEN||'')}" placeholder="Lấy từ @BotFather">
+        </div>
+      </div>
+      <div class="settings-row">
+        <label>Chat ID</label>
+        <div class="input-wrap">
+          <input type="text" id="s-TELEGRAM_CHAT_ID" value="${esc(env.TELEGRAM_CHAT_ID||'')}" placeholder="ID channel/group Telegram">
+          <div class="hint">Dùng @userinfobot hoặc api.telegram.org để lấy chat_id</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildUploadTab(s) {
+  const u = s?.config?.upload || {};
+  return `
+    <div class="settings-group">
+      <div class="settings-group-title">⬆️ Upload</div>
+      ${settingRow('Client chunk size (MB)', 'upload.client_chunk_mb', u.client_chunk_mb??20, 'number', 'Kích thước mỗi chunk gửi lên server. Tăng nếu mạng ổn định (max 50)', '1','50')}
+      ${settingRow('Parallel chunks', 'upload.parallel_chunks', u.parallel_chunks??4, 'number', 'Số chunk upload đồng thời từ browser', '1','16')}
+      ${settingRow('Discord safe ratio', 'upload.discord_safe_ratio', u.discord_safe_ratio??0.85, 'number', 'Tỉ lệ giới hạn guild dùng để ghép part (0.5–0.99)', '0.5','0.99')}
+      ${settingRow('ZIP compress level', 'upload.zip_compress_level', u.zip_compress_level??0, 'number', '0 = không nén (nhanh nhất), 1–9 = nén dần', '0','9')}
+      ${settingRow('Discord parallel sends', 'upload.discord_parallel_sends', u.discord_parallel_sends??3, 'number', 'Số part gửi Discord đồng thời', '1','5')}
+      ${settingRow('Telegram parallel sends', 'upload.tg_parallel_sends', u.tg_parallel_sends??3, 'number', 'Số part gửi Telegram đồng thời', '1','5')}
+      ${settingRow('Send retries', 'upload.discord_send_retries', u.discord_send_retries??3, 'number', 'Số lần retry khi gửi thất bại', '1','10')}
+      ${settingRow('Retry base delay (s)', 'upload.discord_retry_base_delay_s', u.discord_retry_base_delay_s??2, 'number', 'Thời gian chờ cơ sở cho exponential backoff', '1','30')}
+    </div>`;
+}
+
+function buildDownloadTab(s) {
+  const d = s?.config?.download || {};
+  return `
+    <div class="settings-group">
+      <div class="settings-group-title">⬇️ Download</div>
+      ${settingRow('HTTP timeout (s)', 'download.http_timeout_s', d.http_timeout_s??600, 'number', 'Timeout tổng cho mỗi request tải từ Discord CDN', '30','3600')}
+      ${settingRow('Retry count', 'download.retry_count', d.retry_count??3, 'number', 'Số lần retry khi tải thất bại', '1','10')}
+      ${settingRow('Retry base delay (s)', 'download.retry_base_delay_s', d.retry_base_delay_s??2, 'number', 'Thời gian chờ cơ sở cho exponential backoff', '1','30')}
+      ${settingRow('Part delay (ms)', 'download.part_delay_ms', d.part_delay_ms??150, 'number', 'Delay giữa các part tải, tránh spam CDN (0–5000)', '0','5000')}
+      ${settingRow('Stream buffer (KB)', 'download.stream_buffer_kb', d.stream_buffer_kb??64, 'number', 'Kích thước buffer yield về browser', '8','4096')}
+      ${settingRow('Large file threshold (MB)', 'download.large_file_threshold_mb', d.large_file_threshold_mb??500, 'number', 'Trên ngưỡng này sẽ stream từng part thay vì ghép RAM', '50',null)}
+    </div>`;
+}
+
+function buildServerTab(s) {
+  const sv = s?.config?.server || {};
+  return `
+    <div class="settings-group">
+      <div class="settings-group-title">🖥️ Server FastAPI</div>
+      ${settingRow('Host', 'server.host', sv.host??'0.0.0.0', 'text', '0.0.0.0 = tất cả interface, 127.0.0.1 = chỉ local')}
+      ${settingRow('Port', 'server.port', sv.port??8000, 'number', 'Cổng HTTP server', '1','65535')}
+      ${settingRow('Log level', 'server.log_level', sv.log_level??'info', 'select', 'Mức log của Uvicorn', null,null, ['debug','info','warning','error','critical'])}
+      ${settingRow('Keep-alive (s)', 'server.keep_alive_s', sv.keep_alive_s??600, 'number', 'Timeout keep-alive connection', '10','3600')}
+      ${settingRow('Max concurrency', 'server.max_concurrency', sv.max_concurrency??5, 'number', 'Số request xử lý đồng thời', '1','100')}
+    </div>`;
+}
+
+function buildAdvancedTab(s) {
+  const r  = s?.config?.ram      || {};
+  const tg = s?.config?.telegram || {};
+  return `
+    <div class="settings-group">
+      <div class="settings-group-title">💾 RAM</div>
+      ${settingRow('Max upload RAM (MB)', 'ram.max_total_upload_mb', r.max_total_upload_mb??2048, 'number', '0 = không giới hạn. Tổng RAM cho tất cả upload đồng thời', '0',null)}
+      ${settingRow('Session TTL (phút)', 'ram.session_ttl_minutes', r.session_ttl_minutes??60, 'number', 'Thời gian tối đa một session không hoạt động', '5','1440')}
+      ${settingRow('GC interval (phút)', 'ram.gc_interval_minutes', r.gc_interval_minutes??10, 'number', 'Tần suất garbage collector chạy', '1','120')}
+    </div>
+    <hr class="settings-divider">
+    <div class="settings-group">
+      <div class="settings-group-title">✈️ Telegram</div>
+      ${settingRow('File limit (MB)', 'telegram.file_limit_mb', tg.file_limit_mb??50, 'number', '50MB = giới hạn Bot API chuẩn. Local Bot API server có thể tăng lên 2000MB', '10','4000')}
+    </div>
+    <div class="settings-restart-note" style="display:block">
+      ⚠️ Thay đổi cài đặt server/RAM cần restart app để có hiệu lực.
+    </div>`;
+}
+
+function settingRow(label, key, val, type, hint, min, max, options) {
+  let input;
+  if (type === 'select') {
+    input = `<select id="s-cfg-${key}">${options.map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;
+  } else {
+    const minAttr = min != null ? `min="${min}"` : '';
+    const maxAttr = max != null ? `max="${max}"` : '';
+    const step = type === 'number' && String(val).includes('.') ? 'step="0.01"' : '';
+    input = `<input type="${type}" id="s-cfg-${key}" value="${val}" ${minAttr} ${maxAttr} ${step}>`;
+  }
+  return `<div class="settings-row">
+    <label>${label}</label>
+    <div class="input-wrap">
+      ${input}
+      ${hint ? `<div class="hint">${hint}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+async function saveSettings() {
+  const s = state.settings;
+  // Collect env values
+  const envKeys = ['DISCORD_TOKEN','DISCORD_GUILD_ID','TELEGRAM_TOKEN','TELEGRAM_CHAT_ID'];
+  const env = {};
+  envKeys.forEach(k => {
+    const el = document.getElementById('s-'+k);
+    if (el) env[k] = el.value;
+  });
+
+  // Collect config values (nested)
+  const config = JSON.parse(JSON.stringify(s?.config || {}));
+  document.querySelectorAll('[id^="s-cfg-"]').forEach(el => {
+    const key = el.id.replace('s-cfg-', '');
+    const [section, field] = key.split('.');
+    if (!config[section]) config[section] = {};
+    let val = el.value;
+    if (el.type === 'number') val = parseFloat(val);
+    config[section][field] = val;
+  });
+
+  try {
+    const result = await api('POST', '/api/settings', { config, env });
+    toast('✅ ' + result.message, 'success');
+    document.getElementById('settings-restart-note').style.display = 'flex';
+    closeSettings();
+  } catch(e) { toast('Lỗi lưu cài đặt: '+e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════
+function toast(msg, type='info', dur=3500) {
+  const el  = document.createElement('div');
+  const ico = type==='success'?'✅':type==='error'?'❌':'ℹ️';
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="ti">${ico}</span>${esc(msg)}`;
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateY(-8px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); }, dur);
+}
+
+// ════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ════════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
